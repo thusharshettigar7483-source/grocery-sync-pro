@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrocerySync Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { font-family: 'Bricolage Grotesque', sans-serif; font-style: normal !important; }
+
+        :root {
+            --bg-color: #F4F6F8;
+            --card-bg: #FFFFFF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --primary-btn: linear-gradient(135deg, #FDE047, #F59E0B);
+            --danger: #EF4444;
+            --success: #10B981;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.15), transparent 50%),
+                linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 32px 32px, 32px 32px;
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .header { text-align: center; margin-bottom: 3rem; position: relative; z-index: 1; }
+        .header h1 { font-weight: 800; letter-spacing: -0.5px; }
+
+        .kpi-container { display: flex; gap: 2rem; justify-content: space-around; margin-bottom: 3rem; position: relative; z-index: 1; }
+        .kpi-card { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; width: 30%; text-align: center; border-top: 4px solid #F59E0B; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+        .kpi-value { font-size: 2rem; font-weight: 800; margin-top: 0.5rem; }
+
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem; position: relative; z-index: 1; }
+        .chart-container { background: var(--card-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem; transition: box-shadow 0.3s ease; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); position: relative; z-index: 1; }
+
+        .form-control { width: 100%; padding: 0.75rem; margin-top: 0.5rem; border-radius: 6px; border: 1px solid #CBD5E1; background: #F8FAFC; color: #1E293B; box-sizing: border-box; font-size: 0.9rem; font-weight: 400; }
+        .form-control:focus { outline: none; border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); }
+        .form-control:disabled { opacity: 0.7; cursor: not-allowed; }
+        label { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+
+        .btn-submit { background: var(--primary-btn); color: #0F172A; border: none; padding: 0.75rem 2rem; border-radius: 6px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 2rem; box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #E2E8F0; }
+        th { color: var(--text-muted); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; }
+        .badge { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+        .badge-safe { background: rgba(16, 185, 129, 0.15); color: #059669; }
+        .badge-warn { background: rgba(245, 158, 11, 0.15); color: #D97706; }
+        .badge-danger { background: rgba(239, 68, 68, 0.15); color: #DC2626; }
+        .badge-neutral { background: rgba(148, 163, 184, 0.15); color: #475569; }
+
+        .chart-wrapper { position: relative; height: 300px; width: 100%; }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1); color: #DC2626; border: 1px solid #EF4444;
+            padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;
+            transition: all 0.2s; font-weight: 700;
+        }
+        .btn-delete:hover { background: #EF4444; color: white; }
+
+        .btn-print {
+            background: rgba(245, 158, 11, 0.1); color: #D97706; border: 1px solid #F59E0B;
+            padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer;
+            transition: all 0.2s; text-decoration: none; display: inline-block; font-weight: 700;
+        }
+        .btn-print:hover { background: #F59E0B; color: white; }
+
+        .btn-archive-small {
+            background: transparent; color: #94A3B8; border: 1px solid #CBD5E1;
+            padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; margin-left: 0.5rem;
+        }
+        .btn-archive-small:hover { background: #E2E8F0; color: #1E293B; border-color: #94A3B8; }
+
+        .alert-card {
+            background: #FEF2F2;
+            border-left: 4px solid var(--danger);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #FEE2E2;
+            border-left: 4px solid var(--danger);
+        }
+
+        .btn-quick-restock {
+            background-color: var(--danger); color: #FFFFFF; border: none;
+            padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+            cursor: pointer; transition: opacity 0.2s;
+        }
+        .btn-quick-restock:hover { opacity: 0.8; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center;
+            z-index: 1000; backdrop-filter: blur(4px);
+        }
+        .modal-box {
+            background: var(--card-bg); padding: 2.5rem; border-radius: 12px;
+            max-width: 450px; width: 90%; text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border-top: 5px solid var(--danger);
+        }
+        .modal-box h3 { margin-top: 0; font-weight: 800; color: var(--text-main); font-size: 1.5rem; }
+        .modal-box p { color: var(--text-muted); margin-bottom: 2rem; font-weight: 700; font-size: 1rem; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 1rem; justify-content: center; }
+        .modal-btn-cancel {
+            background: #F1F5F9; color: #475569; border: none;
+            padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 700; cursor: pointer; transition: background 0.2s;
+        }
+        .modal-btn-cancel:hover { background: #E2E8F0; }
+        .modal-btn-confirm {
+            background: var(--danger); color: white; border: none;
+            padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+        }
+        .modal-btn-confirm:hover { opacity: 0.9; }
+
+        .toggle-container {
+            display: flex;
+            background: #E2E8F0;
+            border-radius: 999px;
+            padding: 0.35rem;
+            margin: 0 auto 2.5rem auto;
+            width: fit-content;
+        }
+        .toggle-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .toggle-btn.active {
+            background: #FFFFFF;
+            color: var(--text-main);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .form-tab {
+            display: none;
+            animation: fadeInTab 0.4s ease forwards;
+        }
+        .form-tab.active {
+            display: block;
+        }
+        @keyframes fadeInTab {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>GrocerySync Pro</h1>
+        <p style="color: var(--text-muted); font-weight: 700;">Stock Health Analytics & Smart Re-ordering</p>
+    </div>
+
+    <div class="kpi-container">
+        <div class="kpi-card">
+            <div style="color: var(--text-muted); font-weight: 700;">Active Batches</div>
+            <div class="kpi-value">{{ total_tracked }}</div>
+        </div>
+        <div class="kpi-card" style="border-top-color: #8B5CF6;">
+            <div style="color: var(--text-muted); font-weight: 700;">Stock Health Score</div>
+            <div class="kpi-value" style="color: #8B5CF6;">{{ stock_health }}%</div>
+        </div>
+        <div class="kpi-card" style="border-top-color: #10B981;">
+            <div style="color: var(--text-muted); font-weight: 700;">Revenue Recovered</div>
+            <div class="kpi-value" style="color: #10B981;">{{ total_recovered }}</div>
+        </div>
+    </div>
+
+    <div class="chart-container" id="entry-form-container" style="padding: 2.5rem 3rem;">
+        <h2 style="margin-top: 0; margin-bottom: 2rem; font-weight: 800; border-bottom: 2px solid #E2E8F0; padding-bottom: 1rem; color: var(--text-main); text-align: center;">Inventory Management Console</h2>
+
+        <div class="toggle-container">
+            <button type="button" class="toggle-btn active" id="btn-log-batch" onclick="switchTab('batch')">Log Delivery Batch</button>
+            <button type="button" class="toggle-btn" id="btn-register-product" onclick="switchTab('product')">Register New Product</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column;">
+
+            <div id="tab-log-batch" class="form-tab active">
+                <form action="/add_batch" method="POST">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 2rem; align-items: end;">
+                        <div>
+                            <label>Product Master Catalog (Code)</label>
+                            <select name="product_id" id="product_id_select" class="form-control" required>
+                                <option value="" disabled selected>Select Product...</option>
+                                {% for product in products %}
+                                    <option value="{{ product.id }}">[{{ product.sku }}] {{ product.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div><label>Total Purchase Price (₹)</label><input type="text" name="base_price" id="base_price_input" class="form-control" oninput="this.value = this.value.replace(/[^0-9.]/g, '')" placeholder="150" required></div>
+                        <div><label>Quantity</label><input type="text" name="quantity" id="quantity_input" class="form-control" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="50" required></div>
+                        <div><label>Expiry Date</label><input type="datetime-local" name="expiry_date" id="expiry_date_input" class="form-control" required></div>
+                    </div>
+                    <button type="submit" class="btn-submit">Deploy Batch to Shelf</button>
+                </form>
+            </div>
+
+            <div id="tab-register-product" class="form-tab">
+                <form action="/add_product" method="POST" id="form-register-product" onsubmit="unlockCategoriesBeforeSubmit()">
+                    <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr; gap: 2rem; align-items: end;">
+                        <div>
+                            <label>Product Code</label>
+                            <input type="text" name="sku" id="sku_input" class="form-control" placeholder="XXX-000" oninput="formatSKU(this, event)" required>
+                        </div>
+                        <div><label>Product Name</label><input type="text" name="name" id="name_input" class="form-control" placeholder="e.g. Lays Classic" required></div>
+                        <div>
+                            <label>Category</label>
+                            <select name="category" id="category_select" class="form-control" required disabled>
+                                <option value="" disabled selected>Select...</option>
+                                <option value="Dairy">Dairy</option>
+                                <option value="Produce">Produce</option>
+                                <option value="Meat">Meat</option>
+                                <option value="Bakery">Bakery</option>
+                                <option value="Grocery">Grocery</option>
+                            </select>
+                            <input type="hidden" name="category" id="hidden_category_input" value="">
+                        </div>
+                        <div>
+                            <label>Perishable?</label>
+                            <select name="is_perishable" id="is_perishable_select" class="form-control" required>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div><label>Shelf Life (Days)</label><input type="text" name="shelf_life" id="life_input" class="form-control" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="e.g. 180" required></div>
+                        <div><label>Min Stock</label><input type="text" name="min_stock" id="min_input" class="form-control" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="e.g. 20" required></div>
+                    </div>
+                    <button type="submit" class="btn-submit">Register Product into Catalog</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-container">
+            <h3 style="margin-top: 0; font-weight: 800;">Inventory Risk Distribution</h3>
+            <div class="chart-wrapper"><canvas id="riskChart"></canvas></div>
+        </div>
+        <div class="chart-container">
+            <h3 style="margin-top: 0; font-weight: 800;">7-Day Financial Trend</h3>
+            <div class="chart-wrapper"><canvas id="shrinkageChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h3 style="margin-top: 0; font-weight: 800;">Smart Restock Planner (Understock Alerts)</h3>
+        {% if restock_alerts %}
+            {% for alert in restock_alerts %}
+                <div class="alert-card">
+                    <div>
+                        <strong>
+                            <span style="color: var(--danger); font-weight: 800;">CRITICAL: </span>
+                            <span style="color: #1E293B; font-weight: 800;">{{ alert.name }}</span>
+                        </strong>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-weight: 700;">Current Safe Stock: {{ alert.current }} | Min Required: {{ alert.min }}</div>
+                    </div>
+                    <div style="text-align: right; display: flex; align-items: center;">
+                        <button class="btn-quick-restock" onclick="autoFillRestock('{{ alert.id }}', '{{ alert.needed }}')">
+                            Quick Restock +{{ alert.needed }} units
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; color: var(--success); padding: 1rem; font-weight: 700;">All product categories are currently above minimum stock levels.</div>
+        {% endif %}
+    </div>
+
+    <div class="chart-container">
+        <h3 style="margin-top: 0; font-weight: 800;">Active Shelf Inventory Analysis</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Safety/Perishability</th>
+                    <th>Days Left</th>
+                    <th>Status</th>
+                    <th>System Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for batch in batches %}
+                <tr>
+                    <td style="font-weight: 700;">{{ batch.product.name }}</td>
+                    <td style="font-weight: 500;">{{ batch.product.category }}</td>
+                    <td>
+                        {% if batch.product.is_perishable %}
+                            <span style="color: #D97706; font-weight: 700;">Perishable (Max {{ batch.product.standard_shelf_life_days }} days)</span>
+                        {% else %}<span style="color: #475569; font-weight: 700;">Non-Perishable</span>{% endif %}
+                    </td>
+                    <td style="font-weight: 700;">{% if not batch.product.is_perishable %}∞{% else %}{{ batch.days_to_live }} Days{% endif %}</td>
+                    <td>
+                        {% if batch.status == 'Safe' %}<span class="badge badge-safe">Safe</span>
+                        {% elif batch.status == 'Expiring Soon' %}<span class="badge badge-warn">Apply Discount</span>
+                        {% elif batch.status == 'Expired' %}<span class="badge badge-danger">Discard</span>
+                        {% else %}<span class="badge badge-neutral">Stable</span>{% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            {% if batch.status == 'Expiring Soon' %}<a href="/print_tag/{{ batch.id }}" target="_blank" class="btn-print">Print Tag</a>{% endif %}
+                            <form action="/delete_batch/{{ batch.id }}" method="POST" style="margin: 0;">
+                                <button type="button" class="btn-delete" onclick="openCustomConfirm(this.closest('form'))">Remove</button>
+                            </form>
+                            <form action="/archive_product/{{ batch.product.id }}" method="POST" style="margin: 0;">
+                                <button type="button" class="btn-archive-small" onclick="openArchiveConfirm(this.closest('form'))">Archive</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal-overlay" id="custom-modal-overlay">
+        <div class="modal-box">
+            <h3>Confirm Batch Removal</h3>
+            <p>Are you sure you want to remove this batch from the active shelf tracking?</p>
+            <div class="modal-actions">
+                <button class="modal-btn-cancel" onclick="closeCustomConfirm()">Cancel</button>
+                <button class="modal-btn-confirm" onclick="executeCustomConfirm()">Yes, Remove It</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="archive-modal-overlay">
+        <div class="modal-box" style="border-top-color: #64748B;">
+            <h3 style="color: #1E293B;">Archive Product</h3>
+            <p>Are you sure you want to permanently remove this product from the store catalog? Past financial history will be preserved.</p>
+            <div class="modal-actions">
+                <button class="modal-btn-cancel" onclick="closeArchiveConfirm()">Cancel</button>
+                <button class="modal-btn-confirm" style="background: #64748B;" onclick="executeArchiveConfirm()">Yes, Archive Product</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="success-modal-overlay">
+        <div class="modal-box" style="border-top-color: var(--success);">
+            <h3 style="color: var(--success);">Registration Successful</h3>
+            <p>The new product has been successfully registered to the master catalog and is ready for batch deployment.</p>
+            <div class="modal-actions">
+                <button class="modal-btn-confirm" style="background: var(--success);" onclick="closeSuccessConfirm()">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="error-modal-overlay">
+        <div class="modal-box" style="border-top-color: var(--danger);">
+            <h3 style="color: var(--danger);">Duplicate Product Code</h3>
+            <p>The Product Code you entered already exists in the Master Catalog. Please assign a unique code to this new product.</p>
+            <div class="modal-actions">
+                <button class="modal-btn-confirm" style="background: var(--danger);" onclick="closeErrorConfirm()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="format-error-modal-overlay">
+        <div class="modal-box" style="border-top-color: var(--danger);">
+            <h3 style="color: var(--danger);">Invalid Product Code</h3>
+            <p>Product Code must begin with a valid 3-letter category prefix (GRO, DAI, PRO, MEA, BAK) followed by numbers.</p>
+            <div class="modal-actions">
+                <button class="modal-btn-confirm" style="background: var(--danger);" onclick="closeFormatErrorConfirm()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.defaults.font.family = "'Bricolage Grotesque', sans-serif";
+
+        function formatSKU(input, e) {
+            let val = input.value.toUpperCase();
+
+            if (e && e.inputType === 'deleteContentBackward') {
+                if (val.length === 3 && /^[A-Z]{3}$/.test(val)) {
+                    val = val.substring(0, 2);
+                    input.value = val;
+                }
+            }
+
+            val = input.value.toUpperCase();
+            let letters = val.replace(/[^A-Z]/g, '').substring(0, 3);
+            let numbers = '';
+
+            const catSelect = document.getElementById('category_select');
+            const hiddenCat = document.getElementById('hidden_category_input');
+            const validPrefixes = ['GRO', 'DAI', 'PRO', 'MEA', 'BAK'];
+
+            if (letters.length < 3 || !validPrefixes.includes(letters)) {
+                catSelect.value = '';
+                hiddenCat.value = '';
+                catSelect.style.opacity = '0.7';
+            }
+
+            if (letters.length === 3 && validPrefixes.includes(letters)) {
+                if (letters === 'GRO') { catSelect.value = 'Grocery'; hiddenCat.value = 'Grocery'; }
+                else if (letters === 'DAI') { catSelect.value = 'Dairy'; hiddenCat.value = 'Dairy'; }
+                else if (letters === 'PRO') { catSelect.value = 'Produce'; hiddenCat.value = 'Produce'; }
+                else if (letters === 'MEA') { catSelect.value = 'Meat'; hiddenCat.value = 'Meat'; }
+                else if (letters === 'BAK') { catSelect.value = 'Bakery'; hiddenCat.value = 'Bakery'; }
+
+                catSelect.style.opacity = '1';
+                autoDetectPerishable();
+            }
+
+            if (letters.length === 3) {
+                numbers = val.substring(3).replace(/[^0-9]/g, '').substring(0, 3);
+                if (validPrefixes.includes(letters)) {
+                    input.value = letters + '-' + numbers;
+                } else {
+                    input.value = letters + (numbers.length > 0 ? '-' + numbers : '');
+                }
+            } else {
+                input.value = letters;
+            }
+        }
+
+        function unlockCategoriesBeforeSubmit() {
+            document.getElementById('category_select').disabled = false;
+        }
+
+        function switchTab(tabName) {
+            const btnBatch = document.getElementById('btn-log-batch');
+            const btnProduct = document.getElementById('btn-register-product');
+            const tabBatch = document.getElementById('tab-log-batch');
+            const tabProduct = document.getElementById('tab-register-product');
+
+            if (tabName === 'batch') {
+                btnBatch.classList.add('active');
+                btnProduct.classList.remove('active');
+                tabBatch.classList.add('active');
+                tabProduct.classList.remove('active');
+            } else {
+                btnProduct.classList.add('active');
+                btnBatch.classList.remove('active');
+                tabProduct.classList.add('active');
+                tabBatch.classList.remove('active');
+            }
+        }
+
+        function autoDetectPerishable() {
+            const categoryValue = document.getElementById('category_select').value;
+            const perishableSelect = document.getElementById('is_perishable_select');
+
+            if (categoryValue === 'Grocery') {
+                perishableSelect.value = 'false';
+            } else if (categoryValue !== '') {
+                perishableSelect.value = 'true';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            if (urlParams.has('product_added')) {
+                document.getElementById('success-modal-overlay').style.display = 'flex';
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            if (urlParams.has('duplicate_error') || urlParams.has('format_error')) {
+                switchTab('product');
+
+                document.getElementById('sku_input').value = urlParams.get('temp_sku') || '';
+                document.getElementById('name_input').value = urlParams.get('temp_name') || '';
+                document.getElementById('life_input').value = urlParams.get('temp_life') || '';
+                document.getElementById('min_input').value = urlParams.get('temp_min') || '';
+
+                formatSKU(document.getElementById('sku_input'));
+
+                if (urlParams.has('duplicate_error')) {
+                    document.getElementById('error-modal-overlay').style.display = 'flex';
+                } else {
+                    document.getElementById('format-error-modal-overlay').style.display = 'flex';
+                }
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+
+        function closeSuccessConfirm() { document.getElementById('success-modal-overlay').style.display = 'none'; }
+        function closeErrorConfirm() { document.getElementById('error-modal-overlay').style.display = 'none'; }
+        function closeFormatErrorConfirm() { document.getElementById('format-error-modal-overlay').style.display = 'none'; }
+
+        let formToSubmit = null;
+        function openCustomConfirm(formElement) { formToSubmit = formElement; document.getElementById('custom-modal-overlay').style.display = 'flex'; }
+        function closeCustomConfirm() { formToSubmit = null; document.getElementById('custom-modal-overlay').style.display = 'none'; }
+        function executeCustomConfirm() { if (formToSubmit) { formToSubmit.submit(); } }
+
+        let archiveFormToSubmit = null;
+        function openArchiveConfirm(formElement) { archiveFormToSubmit = formElement; document.getElementById('archive-modal-overlay').style.display = 'flex'; }
+        function closeArchiveConfirm() { archiveFormToSubmit = null; document.getElementById('archive-modal-overlay').style.display = 'none'; }
+        function executeArchiveConfirm() { if (archiveFormToSubmit) { archiveFormToSubmit.submit(); } }
+
+        function autoFillRestock(productId, neededQty) {
+            switchTab('batch');
+            document.getElementById('product_id_select').value = productId;
+            document.getElementById('quantity_input').value = neededQty;
+            document.getElementById('base_price_input').value = '';
+            document.getElementById('expiry_date_input').value = '';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const formBox = document.getElementById('entry-form-container');
+            formBox.style.boxShadow = '0 0 0 4px rgba(245, 158, 11, 0.3)';
+            setTimeout(() => { formBox.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.05)'; }, 1500);
+        }
+
+        // V2.16 FIX: Global Keyboard Event Listener for Dialog Modals
+        document.addEventListener('keydown', function(event) {
+            // Check if ANY modal is currently open (display: flex)
+            const modals = [
+                { id: 'custom-modal-overlay', cancel: closeCustomConfirm, confirm: executeCustomConfirm },
+                { id: 'archive-modal-overlay', cancel: closeArchiveConfirm, confirm: executeArchiveConfirm },
+                { id: 'success-modal-overlay', cancel: closeSuccessConfirm, confirm: closeSuccessConfirm }, // Success only has Proceed
+                { id: 'error-modal-overlay', cancel: closeErrorConfirm, confirm: closeErrorConfirm }, // Error only has Close
+                { id: 'format-error-modal-overlay', cancel: closeFormatErrorConfirm, confirm: closeFormatErrorConfirm } // Format Error only has Close
+            ];
+
+            let activeModal = modals.find(m => document.getElementById(m.id).style.display === 'flex');
+
+            if (activeModal) {
+                if (event.key === 'Escape') {
+                    event.preventDefault(); // Stop default browser esc behavior
+                    activeModal.cancel();
+                } else if (event.key === 'Enter') {
+                    event.preventDefault(); // Stop default form submittion from background
+                    activeModal.confirm();
+                }
+            }
+        });
+
+        const riskLabels = {{ risk_labels | tojson }};
+        const riskValues = {{ risk_values | tojson }};
+        const ctxRisk = document.getElementById('riskChart').getContext('2d');
+        new Chart(ctxRisk, {
+            type: 'doughnut',
+            data: { labels: riskLabels, datasets: [{ data: riskValues, backgroundColor: ['#10B981', '#94A3B8', '#F59E0B', '#EF4444'], borderWidth: 0, hoverOffset: 10 }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { labels: { color: '#1E293B', font: { weight: '700' } } } }, cutout: '70%' }
+        });
+
+        const ctxTrend = document.getElementById('shrinkageChart').getContext('2d');
+        const gG = ctxTrend.createLinearGradient(0, 0, 0, 400); gG.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); gG.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+        const rG = ctxTrend.createLinearGradient(0, 0, 0, 400); rG.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); rG.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+        new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Today'],
+                datasets: [
+                    { label: 'Revenue Recovered (₹)', data: [1200, 1500, 800, 2100, 1600, 2400, {{ total_recovered_raw | default(0) }}], borderColor: '#10B981', backgroundColor: gG, borderWidth: 2, tension: 0.4, fill: true },
+                    { label: 'Shrinkage Loss (₹)', data: [400, 300, 850, 200, 500, 150, {{ total_shrinkage_raw | default(0) }}], borderColor: '#EF4444', backgroundColor: rG, borderWidth: 2, tension: 0.4, fill: true }
+                ]
+            },
+            options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#64748B', font: { weight: '600' }, callback: function(v) { return '₹ ' + v; } } }, x: { grid: { display: false }, ticks: { color: '#64748B', font: { weight: '600' } } } }, plugins: { legend: { labels: { color: '#1E293B', font: { weight: '700' } } }, tooltip: { mode: 'index', intersect: false } } }
+        });
+    </script>
+</body>
+</html>

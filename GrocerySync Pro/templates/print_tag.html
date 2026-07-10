@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Discount Tag - {{ batch.product.sku }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Designed for physical printing, ignoring dark mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .tag-container {
+            background-color: white;
+            width: 350px;
+            padding: 20px;
+            border: 2px dashed #000;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .tag-header {
+            background-color: #EF4444; /* Red clearance banner */
+            color: white;
+            text-align: center;
+            font-weight: 900;
+            font-size: 1.5rem;
+            padding: 10px;
+            margin: -20px -20px 15px -20px;
+            border-radius: 6px 6px 0 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .product-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .sku {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .price-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .old-price {
+            text-decoration: line-through;
+            color: #666;
+            font-size: 1.2rem;
+            font-weight: 400;
+        }
+
+        .new-price {
+            color: #EF4444;
+            font-size: 2rem;
+            font-weight: 900;
+        }
+
+        .expiry-warning {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #000;
+            font-weight: 700;
+            margin-bottom: 15px;
+            border-top: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+            padding: 10px 0;
+        }
+
+        /* Pure CSS Fake Barcode for visual effect */
+        .barcode {
+            height: 50px;
+            width: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                #000,
+                #000 3px,
+                #fff 3px,
+                #fff 5px,
+                #000 5px,
+                #000 6px,
+                #fff 6px,
+                #fff 10px
+            );
+            margin-bottom: 5px;
+        }
+
+        .barcode-text {
+            text-align: center;
+            font-size: 0.7rem;
+            letter-spacing: 5px;
+            color: #000;
+        }
+
+        /* Hide everything except the tag when printing */
+        @media print {
+            body { background-color: white; align-items: flex-start; padding: 20px; }
+            .tag-container { box-shadow: none; border: 1px solid #000; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tag-container">
+        <div class="tag-header">Clearance</div>
+
+        <div class="product-name">{{ batch.product.name }}</div>
+        <div class="sku">SKU: {{ batch.product.sku }} | Batch: #{{ batch.id }}</div>
+
+        <div class="price-container">
+            <div style="text-align: left;">
+                <div style="font-size: 0.7rem; color: #666; text-transform: uppercase;">Was</div>
+                <div class="old-price">₹ {{ batch.base_price }}/-</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.7rem; color: #EF4444; text-transform: uppercase; font-weight: 700;">Now</div>
+                <div class="new-price">₹ {{ batch.current_price }}/-</div>
+            </div>
+        </div>
+
+        <div class="expiry-warning">
+            Must Sell By: {{ batch.expiry_date.strftime('%Y-%m-%d %H:%M') }}
+        </div>
+
+        <div class="barcode"></div>
+        <div class="barcode-text">SYS-{{ batch.product.sku }}-{{ batch.id }}</div>
+    </div>
+
+    <!-- Automatically open the print dialogue when the page loads -->
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500); // Slight delay to ensure fonts load
+        };
+    </script>
+</body>
+</html>

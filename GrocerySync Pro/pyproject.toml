@@ -1,0 +1,9 @@
+[project]
+name = "smart-expiry-tracker"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.1.3",
+    "flask-sqlalchemy>=3.1.1",
+    "pip>=26.1.1",
+]
